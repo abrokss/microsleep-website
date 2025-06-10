@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Microsleep Detection</title>
+    <style>
+      /* Reset */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        min-height: 100vh;
+        padding: 40px 20px;
+        color: #fff;
+        transition: background 0.5s ease;
+      }
+
+      body.detecting {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+        animation: pulseBackground 2s ease-in-out infinite alternate;
+      }
+
+      @keyframes pulseBackground {
+        0% {
+          filter: brightness(1);
+        }
+        100% {
+          filter: brightness(1.1);
+        }
+      }
+
+      h1 {
+        font-size: 2.5rem;
+        color: #fff;
+        margin-bottom: 10px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      }
+
+      #clock {
+        font-size: 1.1rem;
+        color: rgba(255, 255, 255, 0.9);
+        margin-bottom: 30px;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 10px 20px;
+        border-radius: 25px;
+        backdrop-filter: blur(10px);
+      }
+
+      .button-container {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 20px;
+      }
+
+      button {
+        padding: 12px 28px;
+        font-size: 16px;
+        border: none;
+        border-radius: 30px;
+        cursor: pointer;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        transition: all 0.3s ease;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      #startBtn {
+        background: linear-gradient(45deg, #00c851, #007e33);
+        color: white;
+      }
+
+      #startBtn:hover {
+        background: linear-gradient(45deg, #00a043, #006629);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+      }
+
+      #stopBtn {
+        background: linear-gradient(45deg, #ff4444, #cc0000);
+        color: white;
+        display: none;
+      }
+
+      #stopBtn:hover {
+        background: linear-gradient(45deg, #e53e3e, #b30000);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+      }
+
+      #status {
+        font-size: 1.2rem;
+        font-weight: bold;
+        margin-bottom: 20px;
+        padding: 12px 24px;
+        border-radius: 25px;
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        min-width: 200px;
+        text-align: center;
+      }
+
+      #status.idle {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      #status.active {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.2);
+        animation: statusPulse 1.5s ease-in-out infinite;
+      }
+
+      @keyframes statusPulse {
+        0%,
+        100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.05);
+        }
+      }
+
+      #video-container {
+        display: none;
+        margin-top: 30px;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 20px;
+        border-radius: 20px;
+        backdrop-filter: blur(15px);
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      }
+
+      img {
+        width: 720px;
+        max-width: 95%;
+        border-radius: 15px;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+      }
+
+      footer {
+        margin-top: auto;
+        padding-top: 30px;
+        font-size: 0.9rem;
+        color: rgba(255, 255, 255, 0.7);
+        text-align: center;
+        background: rgba(255, 255, 255, 0.05);
+        padding: 15px 30px;
+        border-radius: 25px;
+        backdrop-filter: blur(10px);
+      }
+
+      .detection-indicator {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        animation: rotate 2s linear infinite;
+      }
+
+      @keyframes rotate {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="detection-indicator" id="detectionIndicator">👁️</div>
+
+    <h1>Microsleep Detection</h1>
+    <div id="clock"></div>
+
+    <div id="status" class="idle">Status: Siap</div>
+
+    <div class="button-container">
+      <button id="startBtn" onclick="startDetection()">🚀 Start Deteksi</button>
+      <button id="stopBtn" onclick="stopDetection()">⏹️ Stop Deteksi</button>
+    </div>
+
+    <div id="video-container">
+      <img id="video-stream" src="/video" alt="Live Stream" />
+    </div>
+
+    <footer>
+      &copy; 2025 Sistem Deteksi Microsleep - Dibuat oleh Tim Pengembang
+    </footer>
+
+    <script>
+      let isDetecting = false;
+
+      function startDetection() {
+        isDetecting = true;
+        document.getElementById("video-container").style.display = "block";
+        document.getElementById("startBtn").style.display = "none";
+        document.getElementById("stopBtn").style.display = "inline-block";
+        document.getElementById("status").textContent = "Status: Deteksi Aktif";
+        document.getElementById("status").className = "active";
+        document.getElementById("detectionIndicator").style.display = "flex";
+        document.body.classList.add("detecting");
+      }
+
+      function stopDetection() {
+        isDetecting = false;
+        document.getElementById("video-container").style.display = "none";
+        document.getElementById("startBtn").style.display = "inline-block";
+        document.getElementById("stopBtn").style.display = "none";
+        document.getElementById("status").textContent = "Status: Siap";
+        document.getElementById("status").className = "idle";
+        document.getElementById("detectionIndicator").style.display = "none";
+        document.body.classList.remove("detecting");
+      }
+
+      function updateClock() {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString("id-ID", {
+          hour12: false,
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        });
+        const dateString = now.toLocaleDateString("id-ID", {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
+        document.getElementById("clock").innerHTML = `
+        <div>${dateString}</div>
+        <div>Waktu: ${timeString}</div>
+      `;
+      }
+
+      // Update clock setiap detik
+      setInterval(updateClock, 1000);
+      updateClock();
+
+      // Keyboard shortcuts
+      document.addEventListener("keydown", function (event) {
+        if (event.key === " " || event.code === "Space") {
+          event.preventDefault();
+          if (isDetecting) {
+            stopDetection();
+          } else {
+            startDetection();
+          }
+        } else if (event.key === "Escape") {
+          if (isDetecting) {
+            stopDetection();
+          }
+        }
+      });
+    </script>
+  </body>
+</html>
